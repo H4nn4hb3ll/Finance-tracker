@@ -8,7 +8,7 @@ export default function LandingPage({ onLogin }) {
   // Handles user login
   async function handleLogin() {
     
-    //hard wired login override:
+    //hard wired login override: need to rewire front end to middleware
     onLogin("username")
 
     try {
