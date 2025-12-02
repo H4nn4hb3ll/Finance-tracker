@@ -3,6 +3,7 @@ import * as Facade from "./Facade.js";
 import TransactionsTable from "./DashboardElements/TransactionTable.jsx";
 import AccountBox from "./DashboardElements/AccountBox.jsx";
 import Chart from "./DashboardElements/Chart.jsx";
+import Budget from "./DashboardElements/Budget.jsx";
 
 export default function Dashboard({ username }) {
   let [accessToken, setAccessToken] = useState([]);
@@ -190,6 +191,17 @@ export default function Dashboard({ username }) {
 
         {/* Chart */}
         {chartData && chartData.length > 0 && <Chart chartData={chartData} />}
+
+        {/* Budget */}
+        {groupedAccounts.length > 0 && (
+          <Budget
+          username={username}
+          accountName={groupedAccounts[accountIndex].name}
+          spent={groupedAccounts[accountIndex].transactions
+            .filter(t => t.amount < 0)
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0)}
+          />
+          )}
 
         {/* Transaction Table */}
         {groupedAccounts.length > 0 ? (

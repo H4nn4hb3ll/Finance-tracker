@@ -137,6 +137,7 @@ export const getBudget = async (req, res) => {
 
 export const setBudget = async (req, res) => {
     try {
+        console.log("setBudget req.body:", req.body); //test
         const prisma = req.prisma
         const userID = await prisma.users.findUnique({
             where: {username: req.body.userName}, 
@@ -185,7 +186,7 @@ export const setBudget = async (req, res) => {
         res.json({ status: 1, budget: budget });
 
     } catch (err) {
-        console.error(err);
+        console.error("setBudget error:", err);
         res.status(500).json({status: 0, message: "Database error"})
     }
 }
