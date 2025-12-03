@@ -94,8 +94,7 @@ export default function Dashboard({ username }) {
 
   useEffect(() => {
     if (groupedAccounts.length === 0 || !budget) return;
-    //const nowMonth = new Date().getMonth();
-    const nowMonth = 10;
+    const nowMonth = new Date().getMonth();
     const account = groupedAccounts[accountIndex];
     if (!account) return;
   
@@ -196,11 +195,11 @@ export default function Dashboard({ username }) {
     try {
       if (!groupedAccounts[accountIndex]) return;
   
-      const accountName = groupedAccounts[accountIndex].name; // or account_id if backend uses that
+      const accountName = groupedAccounts[accountIndex].name;
       const response = await Facade.setBudget(username, accountName, newBudget);
   
       if (response.success) {
-        setBudget(newBudget); // update local state to reflect the change
+        setBudget(newBudget);
         setAlerts(prev => [...prev, { type: "success", message: "Budget updated successfully." }]);
       } else {
         setAlerts(prev => [...prev, { type: "error", message: "Failed to update budget." }]);
@@ -264,7 +263,7 @@ export default function Dashboard({ username }) {
                 spent={monthlySpend}
                 budget={budget}
                 username={username}
-                accountName={groupedAccounts[accountIndex]?.name} // or .account_name depending on your schema
+                accountName={groupedAccounts[accountIndex]?.name}
                 onBudgetUpdate={setBudget} // update Dashboard state
               />
             </div>
