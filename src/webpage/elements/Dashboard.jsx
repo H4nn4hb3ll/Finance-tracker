@@ -4,6 +4,7 @@ import TransactionsTable from "./DashboardElements/TransactionTable.jsx";
 import AccountBox from "./DashboardElements/AccountBox.jsx";
 import Chart from "./DashboardElements/Chart.jsx";
 import Budget from "./DashboardElements/Budget.jsx";
+import Alerts from "./DashboardElements/Alerts.jsx";
 
 export default function Dashboard({ username }) {
   let [accessToken, setAccessToken] = useState([]);
@@ -13,6 +14,9 @@ export default function Dashboard({ username }) {
   let [accountIndex, setAccountIndex] = useState(0);
   let serverAddress = "http://localhost:3333";
   let [chartData, setChartData] = useState();
+  const [monthlySpend, setMonthlySpend] = useState(0);
+  const [alerts, setAlerts] = useState([]);
+  const [budget, setBudget] = useState();
 
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "June", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -88,6 +92,43 @@ export default function Dashboard({ username }) {
     setGroupedAccounts(allGrouped);
   }, [accounts]);
 
+  useEffect(() => {
+    if (groupedAccounts.length === 0 || !budget) return;
+    //const nowMonth = new Date().getMonth();
+    const nowMonth = 10;
+    const account = groupedAccounts[accountIndex];
+    if (!account) return;
+  
+    const spentThisMonth = account.transactions
+      .filter(t => t.amount < 0 && new Date(t.date).getMonth() === nowMonth)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  
+    setMonthlySpend(spentThisMonth);
+  
+    setAlerts(prevAlerts => {
+      const filtered = prevAlerts.filter(alert => alert.type !== 'error' && alert.type !== 'warning');
+      if (spentThisMonth / budget >= 1) return [...filtered, { type: "error", message: "Budget exceeded!" }];
+      if (spentThisMonth / budget >= 0.75) return [...filtered, { type: "warning", message: "Budget approaching limit." }];
+      return filtered;
+    });
+  
+  }, [groupedAccounts, accountIndex, budget]);
+  
+  // Fetch budget from backend
+  useEffect(() => {
+    const fetchBudget = async () => {
+      try {
+        const budgetResponse = await Facade.getBudget(username);
+        if (budgetResponse && budgetResponse.amount) {
+          setBudget(budgetResponse.amount);
+        }
+      } catch (error) {
+        console.error("Error fetching budget:", error);
+      }
+    };
+    fetchBudget();
+  }, [username]);
+
   async function linkToken() {
     try {
       const data = await Facade.createLinkToken(username);
@@ -124,6 +165,7 @@ export default function Dashboard({ username }) {
             setAccounts(prev => [...prev, transactions])
 
             alert("Link was successful!")
+            setAlerts((prev) => [...prev, { type: "success", message: `Account linked successfully.` }]);
             console.log("Access token:", accessToken);
           } catch (error) {
             console.error("Error fetching transactions:", error)
@@ -149,6 +191,26 @@ export default function Dashboard({ username }) {
     const data = await Facade.getTransactions(accessToken[0]);
     setAccounts(data);
   }
+
+  async function updateBudget(newBudget) {
+    try {
+      if (!groupedAccounts[accountIndex]) return;
+  
+      const accountName = groupedAccounts[accountIndex].name; // or account_id if backend uses that
+      const response = await Facade.setBudget(username, accountName, newBudget);
+  
+      if (response.success) {
+        setBudget(newBudget); // update local state to reflect the change
+        setAlerts(prev => [...prev, { type: "success", message: "Budget updated successfully." }]);
+      } else {
+        setAlerts(prev => [...prev, { type: "error", message: "Failed to update budget." }]);
+      }
+    } catch (error) {
+      console.error("Error updating budget:", error);
+      setAlerts(prev => [...prev, { type: "error", message: "Error updating budget." }]);
+    }
+  }
+  
 
   return (
     <div className="bg-gradient">
@@ -192,16 +254,30 @@ export default function Dashboard({ username }) {
         {/* Chart */}
         {chartData && chartData.length > 0 && <Chart chartData={chartData} />}
 
-        {/* Budget */}
-        {groupedAccounts.length > 0 && (
-          <Budget
-          username={username}
-          accountName={groupedAccounts[accountIndex].name}
-          spent={groupedAccounts[accountIndex].transactions
-            .filter(t => t.amount < 0)
-            .reduce((sum, t) => sum + Math.abs(t.amount), 0)}
-          />
-          )}
+        {/* Budget Card and Alert Card */}
+        <div className="flex flex-row gap-4 mt-6 mb-8 w-full">
+
+          {/* Budget Card */}
+          <div className="flex-1">
+            <div className="frosted-box p-4 h-full">
+              <Budget
+                spent={monthlySpend}
+                budget={budget}
+                username={username}
+                accountName={groupedAccounts[accountIndex]?.name} // or .account_name depending on your schema
+                onBudgetUpdate={setBudget} // update Dashboard state
+              />
+            </div>
+          </div>
+
+            {/* Alert Card */}
+            <div className="flex-1">
+              <div className="frosted-box p-4 h-full">
+                <Alerts alerts={alerts} />
+              </div>
+            </div>
+
+        </div>
 
         {/* Transaction Table */}
         {groupedAccounts.length > 0 ? (
