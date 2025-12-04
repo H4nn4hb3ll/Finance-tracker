@@ -28,14 +28,17 @@ export default function Dashboard({ username }) {
             if(!tokenResponse){
               return;
             }
+
             const tokenStrings = tokenResponse.map(t => t.token);
             setAccessToken(tokenStrings);
             
             //get all of the transactions for each token!
+            const allAccounts = [];
             for(let i = 0; i < tokenStrings.length; i++){
               const transactions = await Facade.getTransactions(tokenStrings[i]);
-              setAccounts(prev => [...prev, transactions])
+              allAccounts.push(transactions);
             }
+            setAccounts(allAccounts)
 
           } catch (error) {
             console.error("Error fetching tokens on init:", error)
@@ -70,11 +73,11 @@ export default function Dashboard({ username }) {
 
   //whenever the accounts change, group them for easier parsing dispaly
   useEffect(() => {
-    if (!accounts || accounts.length === 0) return;
+    if (!accounts) return;
 
     const allGrouped = [];
 
-    accounts.forEach((accountData) => {
+    accounts.forEach((accountData, idx) => {
       if (!accountData || !accountData.accounts) return;
       
         const grouped = accountData.accounts.map((acc) => ({
@@ -88,12 +91,12 @@ export default function Dashboard({ username }) {
         
         allGrouped.push(...grouped);
       });
-  
+
     setGroupedAccounts(allGrouped);
   }, [accounts]);
 
   useEffect(() => {
-    if (groupedAccounts.length === 0 || !budget) return;
+    if (groupedAccounts.length === 0) return;
     const nowMonth = new Date().getMonth();
     const account = groupedAccounts[accountIndex];
     if (!account) return;
@@ -117,16 +120,21 @@ export default function Dashboard({ username }) {
   useEffect(() => {
     const fetchBudget = async () => {
       try {
-        const budgetResponse = await Facade.getBudget(username);
-        if (budgetResponse && budgetResponse.amount) {
-          setBudget(budgetResponse.amount);
+        const accName = groupedAccounts[accountIndex].name
+        const budgetResponse = await Facade.getBudget(username, accName);
+        if (budgetResponse && budgetResponse.budget) {
+          setBudget(budgetResponse.budget);
+        } else {
+          setBudget(0)
         }
       } catch (error) {
         console.error("Error fetching budget:", error);
       }
     };
     fetchBudget();
-  }, [username]);
+  }, [accountIndex, groupedAccounts]);
+
+
 
   async function linkToken() {
     try {
@@ -187,8 +195,21 @@ export default function Dashboard({ username }) {
       alert("Please link an account first.");
       return;
     }
-    const data = await Facade.getTransactions(accessToken[0]);
-    setAccounts(data);
+    const fetchAccessToken = async () => {
+      try { 
+            //get all of the transactions for each token!
+            const allAccounts = [];
+            for(let i = 0; i < accessToken.length; i++){
+              const transactions = await Facade.getTransactions(accessToken[i]);
+              allAccounts.push(transactions);
+            }
+            setAccounts(allAccounts)
+
+          } catch (error) {
+            console.error("Error fetching tokens on init:", error)
+          }
+    }
+    fetchAccessToken();
   }
 
   async function updateBudget(newBudget) {

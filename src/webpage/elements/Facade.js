@@ -22,11 +22,11 @@ export async function createUser(username, password) {
 }
 
 // Returns budget amount
-export async function getBudget(username, accessToken, accountName) {
+export async function getBudget(userName, accountName) {
     const response = await fetch(`${serverAddress}/api/users/getBudget`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, accessToken, accountName })
+        body: JSON.stringify({ userName, accountName })
     });
     return response.json();
 }

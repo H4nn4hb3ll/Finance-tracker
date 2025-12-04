@@ -20,7 +20,7 @@ export default function Budget({ spent, budget, username, accountName, onBudgetU
 
   // Handle save from modal
   const handleSave = async () => {
-    if (!isNaN(tempBudget) && Number(tempBudget) > 0) {
+    if (!isNaN(tempBudget) && Number(tempBudget) >= 0) {
       try {
         // Update backend
         await Facade.setBudget(username, accountName, Number(tempBudget));
@@ -45,10 +45,10 @@ export default function Budget({ spent, budget, username, accountName, onBudgetU
       <h2 className="text-lg font-semibold mb-2 text-gray-800">Monthly Budget</h2>
 
       <p className="text-2xl font-bold text-gray-900">${spent?.toLocaleString() ?? 0}</p>
-      <p className="text-sm text-gray-700 mb-4">of ${currentBudget?.toLocaleString() ?? 0} budget</p>
+      <p className="text-sm text-gray-700 mb-4">of ${budget?.toLocaleString() ?? "0"} budget</p>
 
       <button onClick={() => setShowModal(true)} className="btn-green">
-        Change Budget Amount
+        Change Budget Amount for {accountName}
       </button>
 
       {showModal && (
